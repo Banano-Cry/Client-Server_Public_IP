@@ -23,28 +23,35 @@ class serverThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self,name='Server')
         self.status = True
+
     def run(self):
         os.system('clear')
+        print("[STARTING] Server listening ...")
         while(True):
             if self.status:
-                consoleCommand = str(input('[Server]$ '))
+                consoleCommand = str(input(chr(27)+'[1;31m'+'\n[Server]$ '))
                 if consoleCommand == "":
                     pass
                 elif consoleCommand == "help":
-                    print("\t\t[*]Lista de comandos del servidor[*]")
-                    print("exit --> Salir del servidor")
-                    print("count --> Cantidad de usuarios en el servidor")
-                    print("list --> Lista a los usuarios en el servidor")
+                    print(chr(27)+'[1;33m',end="")
+                    print("\n\t[*]Lista de comandos del servidor[*]")
+                    print("\t[1]exit --> Salir del servidor")
+                    print("\t[2]count --> Cantidad de usuarios en el servidor")
+                    print("\t[3]list --> Lista a los usuarios en el servidor")
 
                 elif consoleCommand == "list":
+                    print(chr(27)+'[1;33m',end="")
                     print(f"[*] Hay {len(client_list)} usuarios en el servidor [*]")
 
                 elif consoleCommand == "count":
+                    print(chr(27)+'[1;33m',end="")
                     print("[*] Los usuarios conectados actualmente son: [*]")
                     for num, name in enumerate(nicknames):
                         print(f"[{num + 1}] {name}")
 
                 elif consoleCommand == "exit":
+                    print(chr(27)+'[1;33m',end="")
+                    print("[-] Saliendo del servidor")
                     os._exit(0)
 
 #Broadcast
@@ -79,7 +86,6 @@ def handle_client(client): #manejador de la conexion con el cliente
 #receive
 def receive():
     while True:
-        print("[STARTING] Server listening ...")
         client, addr = server.accept()
         print(f'Connected with {addr}')
 
@@ -103,5 +109,6 @@ def main():
     server = serverThread()
     server.start()
     receive()
+
 if __name__ == "__main__":
     main()
