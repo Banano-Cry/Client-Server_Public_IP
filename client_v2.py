@@ -2,9 +2,9 @@ import socket
 import threading
 import time
 import sys
+import os
 
 try:
-
     HEADER = 64
     PORT = 11538
     FORMAT = 'utf-8'
@@ -15,11 +15,18 @@ try:
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(ADDR)
+
 except ValueError as e:
     print(e)
     input()
 
 def commands(command):
+
+    if(command[1:] == "help"):
+        print(chr(27)+'[1;33m',end="")
+        print("\n\t[*]Lista de comandos[*]")
+        print("\t[1]/exit --> Salir del servidor")
+
     if(command[1:] == "exit"):
         print("Cerrando conexion...")
         time.sleep(3)
@@ -35,7 +42,7 @@ def write():
 
         elif(msg[0] == "/"):
             commands(msg)
-            break
+
         else:
             data = f"$ {nickname}: {msg}"
             client.send(data.encode(FORMAT))
@@ -47,12 +54,22 @@ def receive():
             if msg == "Nickname?: ":
                 client.send(nickname.encode(FORMAT))
             else:
+                print(chr(27)+'[0;37m',end="")
+                if(len(msg) == 0):
+                    print(chr(27)+'[1;31m',end="")
+                    print("[-] Servidor desconectado")
+                    client.close()
+                    os._exit(0)
                 print(f"{msg}\n")
+
         except ConnectionAbortedError:
+            client.close()
+            os._exit(0)
             break
         except:
             print("Error")
             client.close()
+            os._exit(0)
             break
 
 

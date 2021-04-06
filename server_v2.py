@@ -29,7 +29,7 @@ class serverThread(threading.Thread):
         print("[STARTING] Server listening ...")
         while(True):
             if self.status:
-                consoleCommand = str(input(chr(27)+'[1;31m'+'\n[Server]$ '))
+                consoleCommand = str(input(chr(27)+'[1;37m'+'\n[Server]$ '))
                 if consoleCommand == "":
                     pass
                 elif consoleCommand == "help":
@@ -50,7 +50,7 @@ class serverThread(threading.Thread):
                         print(f"[{num + 1}] {name}")
 
                 elif consoleCommand == "exit":
-                    print(chr(27)+'[1;33m',end="")
+                    print(chr(27)+'[1;31m',end="")
                     print("[-] Saliendo del servidor")
                     os._exit(0)
 
@@ -63,7 +63,9 @@ def close(client):
     index = client_list.index(client)
     client_list.remove(client)
     nickname = nicknames[index]
+    print(chr(27)+'[1;31m',end="")
     print(f"[-] Se ha desconectado {nickname}...")
+    print(chr(27)+'[0;37m',end="")
     broadcast(f"{nickname} ha dejado el chat...".encode(FORMAT))
     nicknames.remove(nickname)
     client.close()
@@ -76,6 +78,7 @@ def handle_client(client): #manejador de la conexion con el cliente
             if message == b"":
                 close(client)
                 break
+            print(chr(27)+'[1;33m',end="")
             print(f"$ {nicknames[client_list.index(client)]}")
             broadcast(message)
 
@@ -95,6 +98,7 @@ def receive():
         client_list.append(client)
         nicknames.append(nickname)
 
+        print(chr(27)+'[1;32m',end="")
         print(f"[+] {nickname} ha entrado al chat!")
         broadcast(f"{nickname} ha entrado al chat!\n".encode(FORMAT))
         client.send("Connected to the server.".encode(FORMAT))
