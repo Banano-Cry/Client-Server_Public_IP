@@ -51,7 +51,7 @@ class serverThread(threading.Thread):
 
                 elif consoleCommand == "exit":
                     print(chr(27)+'[1;31m',end="")
-                    print("[-] Saliendo del servidor")
+                    print("[-] Apagando servidor")
                     os._exit(0)
 
 #Broadcast
@@ -105,9 +105,6 @@ def receive():
 
         thread = threading.Thread(target=handle_client, args=(client,))
         thread.start()
-        command = input()
-        if command == "/close":
-            print("adios")
 
 def main():
     server = serverThread()

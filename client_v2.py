@@ -6,7 +6,7 @@ import os
 
 try:
     HEADER = 64
-    PORT = 11538
+    PORT = 15195
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
     SERVER = "3.142.81.166"
@@ -51,6 +51,7 @@ def receive():
     while True:
         try:
             msg = client.recv(1024).decode(FORMAT)
+
             if msg == "Nickname?: ":
                 client.send(nickname.encode(FORMAT))
             else:
@@ -60,14 +61,17 @@ def receive():
                     print("[-] Servidor desconectado")
                     client.close()
                     os._exit(0)
-                print(f"{msg}\n")
-
+                else:
+                    print(1)
+                    print(chr(27)+'[1;33m'+msg)
+                    '''
         except ConnectionAbortedError:
             client.close()
             os._exit(0)
             break
-        except:
-            print("Error")
+            '''
+        except Exception as e:
+            print(e)
             client.close()
             os._exit(0)
             break
