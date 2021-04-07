@@ -1,0 +1,34 @@
+##SERVIDOR##
+1. Cuando un cliente entre, se le pide nombre y clave RC4 (Se comparan las dos claves (max 3 veces, si no, el servidor cambia ip de ngrok), si coincien, siguiente paso)
+2. El servidor genera una clave publica y privada (en memoria y las encripta con RC4)
+3. El servidor hace un proceso de intercambio de llave privada entre los clientes.
+4. El servidor genera la llave simetrica, la encripta con la publica y la envia por broadcast a los clientes.
+5. El cliente desencripta la llave simetrica (en memoria), con la privada que desencripto con el RC4.
+6. Con la llave simetrica, se encripta y desencripta los mensajes a partir de ese momento.
+7. El cliente que envia deberia de crear un hash y agregarlo al final del string y se encripta todo con la simetrica..
+8. Cuando el cliente recibe el mensaje, desencripta con la simetrica y calcula el hash del string sin el hash.
+
+
+##FUNCIONES##
+<Clientes>
+(M)leerLlaveRC4() <-- Leer y enviar
+(M)colorChat() <-- Poner colores a las entradas del chat
+(G)DesencriptarLlavePriv() <-- Desencripta la llave privada con la clave RC4
+(G)DesencriptarLlaveSim() <-- Desencripta la llave simetrica con la privada que le envio el servidor
+(M)leerMsg() <-- Separa el mensaje de texto con el hash  y se llama a calcHash() para verificar que sea el autentico
+(M)calcHash() <-- Calcula el hash del msg
+(G)encriptarMsg() <-- Une el mensaje con el hash y lo encripta
+(G)enviarMsg() <-- Envia el mensaje
+
+<Servidor>
+(M)compararRC4() <-- Compara las dos llaves, if cl1==cl2: ok else: otorga hasta 3 veces la oportunidad, si no coinciden, cambia ip ngrok
+*(M)subirServidor() <-- Ejecutar ngrok desde python, copiara la ip directamente y la colocara como ip de servidor
+(G)generarParLlaves() <-- El servidor genera las llaves...
+(G)encriptarLlavePriv() <-- El servidor encripta la llave privada con RC4
+(G)diffieHellman() <-- Guille xd
+(G)generarLlaveSimetrica() <-- El servidor genera la llave simetrica
+(G)BroadcastLlaveSim() <-- Se distribuyen la llave a los clientes
+
+##Temas a tomar##
+<> 2 o mas clientes
+
