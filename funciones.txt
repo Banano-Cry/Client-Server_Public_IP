@@ -13,21 +13,21 @@
 <Clientes>
 (M)leerLlaveRC4() <-- Leer y enviar
 (M)colorChat() <-- Poner colores a las entradas del chat
-(G)DesencriptarLlavePriv() <-- Desencripta la llave privada con la clave RC4
-(G)DesencriptarLlaveSim() <-- Desencripta la llave simetrica con la privada que le envio el servidor
+-listo-(G)DesencriptarLlavePriv() <-- Desencripta la llave privada con la clave RC4
+-listo-(G)DesencriptarLlaveSim() <-- Desencripta la llave simetrica con la privada que le envio el servidor
 (M)leerMsg() <-- Separa el mensaje de texto con el hash  y se llama a calcHash() para verificar que sea el autentico
 (M)calcHash() <-- Calcula el hash del msg
-(G)encriptarMsg() <-- Une el mensaje con el hash y lo encripta
-(G)enviarMsg() <-- Envia el mensaje
+-(G)encriptarMsg() <-- Une el mensaje con el hash y lo encripta
+-(G)enviarMsg() <-- Envia el mensaje
 
 <Servidor>
 (M)compararRC4() <-- Compara las dos llaves, if cl1==cl2: ok else: otorga hasta 3 veces la oportunidad, si no coinciden, cambia ip ngrok
 *(M)subirServidor() <-- Ejecutar ngrok desde python, copiara la ip directamente y la colocara como ip de servidor
-(G)generarParLlaves() <-- El servidor genera las llaves...
-(G)encriptarLlavePriv() <-- El servidor encripta la llave privada con RC4
-(G)diffieHellman() <-- Guille xd
-(G)generarLlaveSimetrica() <-- El servidor genera la llave simetrica
-(G)BroadcastLlaveSim() <-- Se distribuyen la llave a los clientes
+-listo-(G)generarParLlaves() <-- El servidor genera las llaves...
+-listo-(G)encriptarLlavePriv() <-- El servidor encripta la llave privada con RC4
+-listo funcional xD-(G)diffieHellman() <-- Guille xd
+-listo-(G)generarLlaveSimetrica() <-- El servidor genera la llave simetrica
+-listo-(G)BroadcastLlaveSim() <-- Se distribuyen la llave a los clientes
 
 ##Temas a tomar##
 <> 2 o mas clientes
