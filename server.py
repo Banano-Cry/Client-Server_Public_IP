@@ -189,7 +189,7 @@ def receive():
         client.send("SYN".encode(FORMAT))
         respuesta = client.recv(1024).decode(FORMAT)
 
-        print("esta es la resp: " + str(respuesta))
+        #print("esta es la resp: " + str(respuesta))
         if respuesta == "ACK":
                 client.send(privateKey.encode(FORMAT)) #ojo con el encode pq ya esta en hex
                 recv = client.recv(1024).decode(FORMAT)
