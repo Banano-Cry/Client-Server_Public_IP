@@ -164,12 +164,13 @@ def close(client):
 def handle_client(client): #manejador de la conexion con el cliente
     while True:
         try:
-            message = client.recv(1024)
+            message = client.recv(2048)
             if message == b"":
                 close(client)
                 break
             print(chr(27)+'[1;33m',end="")
             print(f"$ {nicknames[client_list.index(client)]}")
+            message =  str.encode("enc*") + message
             broadcast(message)
 
         except:

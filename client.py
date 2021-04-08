@@ -43,7 +43,10 @@ def commands(command):
 def write():
     while True:
         msg = input("> ")
-        
+        #print("Mi mensaje: ")
+        #print(msg)
+        #print("Mi mensaje encriptado:")
+        #print(encriptarMsg(msg,LlaveSim))
         if(len(msg) == 0):
             continue
 
@@ -51,11 +54,13 @@ def write():
             commands(msg)
 
         else:
-            #msg = encriptarMsg(msg,LlaveSim)
+            msg = encriptarMsg(msg,LlaveSim) #jejejeje
             data = f"$ {nickname}: {msg}"
             client.send(data.encode(FORMAT))
 
 def receive():
+    global LlavePrivada
+    global LlaveSim
     while True:
         try:
             msg = client.recv(2048).decode(FORMAT)
@@ -66,28 +71,37 @@ def receive():
             elif msg == "SYN":
                 client.send("ACK".encode(FORMAT))
                 try:
+                    
                     LlavePrivada = client.recv(2048)
                     client.send("RECV".encode(FORMAT))
                     LlaveSim = client.recv(2048)
                     if LlaveSim is not None:
                         client.send("RECV SIM".encode(FORMAT))
-                        print(LlaveSim)
+                        #print(LlaveSim)
                     #print(LlavePrivada)
                     LlavePrivada = desencriptarLlavePriv(LlavePrivada,clave_rc4)
                     LlaveSim = desencriptarLlaveSimetrica(LlaveSim,LlavePrivada)
-                    print(LlaveSim)
+                    #print(LlaveSim)
                 except:
                     print("Error en el intercambio")
+
+            elif msg.split("*",1)[0] == "enc":
+                #print("Intento de mensaje desencriptado")
+                #print(LlaveSim)
+                nick, msg = desencriptarMsg(msg,LlaveSim)
+                print(f"{nick}: {msg}")
+
+
             else:
-                #msg = desencriptarMsg(msg,LlaveSim)
-                print(chr(27)+'[0;37m',end="")
+                
+                #print(chr(27)+'[0;37m',end="")
                 if(len(msg) == 0):
                     print(chr(27)+'[1;31m',end="")
                     print("[-] Servidor desconectado")
                     client.close()
                     os._exit(0)
                 else:
-                    
+                
                     print(1)
                     print(chr(27)+'[1;33m'+msg)
                     '''
@@ -132,20 +146,20 @@ def desencriptarLlavePriv(LlavePriv, ClaveRC):
 
     S = KSA(llave)
     cadena_cifrante = np.array(PRGA(S, len(LlavePriv)//2))
-    print("\nKeystream:")
-    print(cadena_cifrante)
+    #print("\nKeystream:")
+    #print(cadena_cifrante)
 
     hex_list = [LlavePriv[i:i+2] for i in range(0, len(LlavePriv), 2)]
     texto2 = np.array([int(i,16) for i in hex_list])
 
     NuevaLlavePriv = cadena_cifrante ^ texto2
 
-    print("\nLlave privada en Hexadecimal:")
-    print(LlavePriv) #imprime en hexadecimal
-    print("\nUnicode:")
+    #print("\nLlave privada en Hexadecimal:")
+    #print(LlavePriv) #imprime en hexadecimal
+    #print("\nUnicode:")
     NuevaLlavePriv = "".join([chr(c) for c in NuevaLlavePriv])
-    print("nueva llave priv desencriptada")
-    print(NuevaLlavePriv)
+    #print("nueva llave priv desencriptada")
+    #print(NuevaLlavePriv)
 
     return NuevaLlavePriv
 def desencriptarLlaveSimetrica(LlaveSimetricaEnc, LlavePrivada):
@@ -164,18 +178,31 @@ def calcHash(msg): #solo prueba
     msgHashed = "//HASH"
     return msgHashed
 def encriptarMsg(msg, LlaveSimetrica): #solo prueba
-    msgHash = calcHash(msg)
-    newMsg = msg + msgHash
+    #msgHash = calcHash(msg)
+    #newMsg = msg + msgHash
+    global fernet 
     fernet = Fernet(LlaveSimetrica)
-    newMsg = str.encode(msgHash)
+    newMsg = str.encode(msg)
     encrypted = fernet.encrypt(newMsg)
+    #print("Mensaje encriptado: " + str(encrypted))
     return encrypted
+
 def desencriptarMsg(msg, LlaveSimetrica): #solo prueba
-    fernet = Fernet(LlaveSimetrica)
-    decrypted = fernet.decrypt(str.encode(msg))
-    newMsg = decrypted.rsplit("//",-1)
-        
-    return newMsg
+    #print(msg)
+    newMsg = msg.split("*",1)
+    msg2 = newMsg[1].split(": ",1)
+    nick = msg2[0]
+    msg3 = msg2[1]
+    msg4 = msg3.split("'",2) 
+    #print("mensaje spliteado")
+    #print(msg4)
+    try:
+        decrypted = fernet.decrypt(str.encode(msg4[1]))
+        return nick, decrypted.decode()
+        #newMsg = "".join(i for i in newMsg)
+    except Exception as e:
+        print(e)
+   
 
 
 def main():
@@ -186,5 +213,6 @@ def main():
     thread_write.start()
 
 if __name__ == "__main__":
+    
     nickname = input("Ingrese su nombre de usuario: ")
     main()
