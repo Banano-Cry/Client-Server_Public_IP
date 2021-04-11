@@ -8,26 +8,24 @@ import cryptography
 from cryptography.fernet import Fernet
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Hash import MD5
 
 try:
-    HEADER = 64
     PORT = 5050
     FORMAT = 'utf-8'
-    DISCONNECT_MESSAGE = "!DISCONNECT"
     SERVER = "127.0.0.1"
     ADDR = (SERVER,PORT)
     LlavePrivada = None
     LlaveSim = None
     nickname = ""
-    clave_rc4 = "elfinalito" #Clave de prueba
+    clave_rc4 = None #Clave de prueba
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect(ADDR)
 
 except ValueError as e:
     print(e)
     input()
-
 def commands(command):
+
 
     if(command[1:] == "help"):
         print(chr(27)+'[1;33m',end="")
@@ -36,10 +34,10 @@ def commands(command):
 
     if(command[1:] == "exit"):
         print("Cerrando conexion...")
-        time.sleep(3)
+        #time.sleep(3)
         client.close()
-        sys.exit(0)
-
+        os._exit(0)
+        #sys.exit(0)
 def write():
     while True:
         msg = input("> ")
@@ -54,10 +52,21 @@ def write():
             commands(msg)
 
         else:
+            msg = msg + calcHash(msg)
             msg = encriptarMsg(msg,LlaveSim) #jejejeje
             data = f"$ {nickname}: {msg}"
             client.send(data.encode(FORMAT))
-
+def disclaimer():
+    print(chr(27) + '[1;31m',end="")
+    print("\t\t\t\t***********************************************")
+    print("\t\t\t\t*                  DISCLAIMER                 *")
+    print("\t\t\t\t***********************************************")
+    print(chr(27) + '[1;37m',end="")
+    print("\t\tPara facilidad en la visualizacion, los mensajes que envie el usuario se pondran de color amarillo:")
+    print(chr(27) + '[1;33m'+'\t\tEjemplo')
+    print(chr(27) + '[1;37m'+'\t\tLos mensajes que reciba de otro cliente se pondran en morado:')
+    print(chr(27) + '[1;35m'+'\t\tEjemplo')
+    print(chr(27) + '[1;37m',end="\n")
 def receive():
     global LlavePrivada
     global LlaveSim
@@ -71,7 +80,6 @@ def receive():
             elif msg == "SYN":
                 client.send("ACK".encode(FORMAT))
                 try:
-                    
                     LlavePrivada = client.recv(2048)
                     client.send("RECV".encode(FORMAT))
                     LlaveSim = client.recv(2048)
@@ -89,8 +97,12 @@ def receive():
                 #print("Intento de mensaje desencriptado")
                 #print(LlaveSim)
                 nick, msg = desencriptarMsg(msg,LlaveSim)
+                if nick.split(" ")[1] == nickname:
+                    print(chr(27) + '[1;33m',end="")
+                else:
+                    print(chr(27) + '[1;35m',end="")
                 print(f"{nick}: {msg}")
-
+                print(chr(27)+'[0;37m',end="")
 
             else:
                 
@@ -101,22 +113,14 @@ def receive():
                     client.close()
                     os._exit(0)
                 else:
-                
-                    print(1)
-                    print(chr(27)+'[1;33m'+msg)
-                    '''
-        except ConnectionAbortedError:
-            client.close()
-            os._exit(0)
-            break
-            '''
+                    print(chr(27)+'[0;37m',end="")
+                    print(msg)
+
         except Exception as e:
             print(e)
             client.close()
             os._exit(0)
             break
-
-
 def KSA(llave):
     longitud_llave = len(llave)
     S = list(range(256))
@@ -174,19 +178,41 @@ def desencriptarLlaveSimetrica(LlaveSimetricaEnc, LlavePrivada):
         return LlaveSimetricaDes
     except ValueError as e:
         print("Error Tecnico: " + str(e))
-def calcHash(msg): #solo prueba
-    msgHashed = "//HASH"
-    return msgHashed
+def calcHash(msg): 
+    msgHashed = MD5.new()
+    msgHashed.update(msg.encode())
+    return msgHashed.hexdigest()
 def encriptarMsg(msg, LlaveSimetrica): #solo prueba
+
     #msgHash = calcHash(msg)
-    #newMsg = msg + msgHash
-    global fernet 
+    #newMsg = msg + msgHash 
     fernet = Fernet(LlaveSimetrica)
     newMsg = str.encode(msg)
     encrypted = fernet.encrypt(newMsg)
     #print("Mensaje encriptado: " + str(encrypted))
     return encrypted
 
+def checkHash(msg):
+    hash = msg[-32:]
+    msg = msg[:-32]
+    if hash == calcHash(msg):
+        return (False, msg)
+    else:
+        return (True, msg)
+
+def integridadComprometida():
+    print(chr(27)+'[1;33m',end="")
+    print("\t\t\t\t***********************************************")
+    print("\t\t\t\t*           INTEGRIDAD COMPROMETIDA           *")
+    print("\t\t\t\t***********************************************")
+    print("[*] El servidor ha sido informado del problema, desesa salir? [Y] [N]")
+    res = input("[*] ")
+    if res.lower() == "n":
+        return True
+    elif res.lower() == "y":
+        print("[-] El programa se cerrara...")
+        client.close()
+        os._exit(0)
 def desencriptarMsg(msg, LlaveSimetrica): #solo prueba
     #print(msg)
     newMsg = msg.split("*",1)
@@ -197,15 +223,43 @@ def desencriptarMsg(msg, LlaveSimetrica): #solo prueba
     #print("mensaje spliteado")
     #print(msg4)
     try:
-        decrypted = fernet.decrypt(str.encode(msg4[1]))
-        return nick, decrypted.decode()
+        fernet = Fernet(LlaveSimetrica)
+        decrypted = fernet.decrypt(str.encode(msg4[1])).decode()
+        verify, msg = checkHash(decrypted)
+        if verify:
+            print(chr(27)+'[1;31m',end="")
+            print("[-] INTEGRIDAD COMPROMETIDA, EL MENSAJE NO CORRESPONDE CON EL HASH")
+            integridadComprometida()
+            print(chr(27)+'[0;37m',end="")
+
+        return nick, msg
         #newMsg = "".join(i for i in newMsg)
     except Exception as e:
-        print(e)
-   
-
+        print(e) 
+def sendRC4():
+    global clave_rc4
+    while True:
+        clave_rc4 = input("Ingrese la clave RC4 acordada entre los clientes: ")
+        client.send(clave_rc4.encode(FORMAT))
+        codeNumber = int(client.recv(50).decode(FORMAT))
+        if codeNumber == 200:
+            return True
+        elif codeNumber == 400:
+            print(chr(27)+'[1;33m',end="")
+            print("[-] Clave incorrecta")
+            continue
+        elif codeNumber == 500:
+            print(chr(27)+'[1;31m',end="")
+            print("[-] El servidor te desconecto")
+            client.close()
+            os._exit(0)
+        
+def startClient():
+    client.connect(ADDR)
+    return sendRC4()
 
 def main():
+    disclaimer()
     thread_recieve = threading.Thread(target=receive)
     thread_write = threading.Thread(target=write)
 
@@ -213,6 +267,6 @@ def main():
     thread_write.start()
 
 if __name__ == "__main__":
-    
     nickname = input("Ingrese su nombre de usuario: ")
-    main()
+    if startClient():
+        main()

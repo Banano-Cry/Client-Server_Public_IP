@@ -16,16 +16,19 @@ PORT = 5050
 SERVER = "127.0.0.1"
 ADDR = (SERVER,PORT)
 LlaveSim = None
-clave_rc4 = "elfinalito" #Clave de prueba
+privateKey = None
+publicKey = None
+clave_rc4 = None
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(ADDR)
 server.listen()
 
 client_list = []
 nicknames = []
-#######################################################
-################ RC4 #######################
+rc4_keys = {}
+
 def KSA(llave):
     longitud_llave = len(llave)
     S = list(range(256))
@@ -62,15 +65,12 @@ def encriptarLlavePriv(llavePriv,claveRC):
     llavePriv = np.array([i for i in llavePriv])
 
     cipher = cadena_cifrante ^ llavePriv #XOR dos arrays
-    print(cipher)
+    #print(cipher)
 
-    print("\nCipher en Hexadecimal:")
-    print(cipher.astype(np.uint8).data.hex()) #imprime en hexadecimal
+    #print("\nCipher en Hexadecimal:")
+    #print(cipher.astype(np.uint8).data.hex()) #imprime en hexadecimal
     llavePrivCifrada = cipher.astype(np.uint8).data.hex()
     return llavePrivCifrada
-
-
-############### FIN RC4 ####################
 
 #Generacion de llaves
 def generarParLlaves():
@@ -101,13 +101,11 @@ def encriptarLlaveSim(LlaveSim, LlavePublica):
             # Encrypted fernet key
             key_encrypted = public_crypter.encrypt(LlaveSim)
             # Write encrypted fernet key to file
-            print("Llave simetrica encriptada exitosamente.")
+            #print("Llave simetrica encriptada exitosamente.")
 
             return key_encrypted
     except Exception as e:
         print("Error técnico." + str(e))   
-
-
 
 class serverThread(threading.Thread):
     def __init__(self):
@@ -115,9 +113,12 @@ class serverThread(threading.Thread):
         self.status = True
 
     def run(self):
-        os.system('clear')
+        if os.name == "nt":
+            os.system("cls")
+        else:
+            os.system('clear')
         print("[STARTING] Server listening ...")
-        while(True):
+        while(self.status):
             if self.status:
                 consoleCommand = str(input(chr(27)+'[1;37m'+'\n[Server]$ '))
                 if consoleCommand == "":
@@ -142,6 +143,8 @@ class serverThread(threading.Thread):
                 elif consoleCommand == "exit":
                     print(chr(27)+'[1;31m',end="")
                     print("[-] Apagando servidor")
+                    serverThread.status = False
+                    server.close()
                     os._exit(0)
 
 #Broadcast
@@ -177,56 +180,83 @@ def handle_client(client): #manejador de la conexion con el cliente
             close(client)
             break
 
+def createKeys():
+    global privateKey
+    global publicKey
+    global LlaveSim
+    privateKey, publicKey = generarParLlaves()
+    privateKey = encriptarLlavePriv(privateKey, clave_rc4)
+    #print(privateKey)
+    LlaveSim = generarLlaveSimetrica()
+    #print("llave simetrica")
+    #print(LlaveSim)
+    LlaveSim = encriptarLlaveSim(LlaveSim, publicKey)
+    #print("Nueva Llave simetrica")
+    #print(LlaveSim)
+
+def negotiationRC4(client):
+    attempt = 0
+    try:
+        while attempt < 2:
+            rc4 = client.recv(1024).decode(FORMAT)
+            if rc4 == clave_rc4:
+                client.send("200".encode(FORMAT))
+                return True
+            else:
+                client.send("400".encode(FORMAT))
+                attempt+=1
+        client.send("500".encode(FORMAT))
+        client.close()
+        return False
+    except Exception as e:
+        print(e)
+        
 #receive
 def receive():
+    createKeys()
     while True:
         client, addr = server.accept()
-        print(f'Connected with {addr}')
+        if negotiationRC4(client):   
+            print(f'Connected with {addr}')
 
-        client.send("Nickname?: ".encode(FORMAT))
-        nickname = client.recv(1024)
+            client.send("Nickname?: ".encode(FORMAT))
+            nickname = client.recv(1024)
 
-        client.send("SYN".encode(FORMAT))
-        respuesta = client.recv(1024).decode(FORMAT)
+            client.send("SYN".encode(FORMAT))
+            respuesta = client.recv(1024).decode(FORMAT)
 
-        #print("esta es la resp: " + str(respuesta))
-        if respuesta == "ACK":
-                client.send(privateKey.encode(FORMAT)) #ojo con el encode pq ya esta en hex
-                recv = client.recv(1024).decode(FORMAT)
-                if recv == "RECV":
-                    client.send(LlaveSim)
-                    recv_2 = client.recv(1024).decode(FORMAT)
-                    if recv_2 == "RECV SIM":                        
-                        print("Envio exitoso doble")
-                        client_list.append(client)
-                        nicknames.append(nickname)
-                else:
-                    print("Envio fallido")
+            #print("esta es la resp: " + str(respuesta))
+            if respuesta == "ACK":
+                    client.send(privateKey.encode(FORMAT)) #ojo con el encode pq ya esta en hex
+                    recv = client.recv(1024).decode(FORMAT)
+                    if recv == "RECV":
+                        client.send(LlaveSim)
+                        recv_2 = client.recv(1024).decode(FORMAT)
+                        if recv_2 == "RECV SIM":                        
+                            print("Envio exitoso doble")
+                            client_list.append(client)
+                            nicknames.append(nickname)
+                    else:
+                        print("Envio fallido")
 
-        print(chr(27)+'[1;32m',end="")
-        print(f"[+] {nickname} ha entrado al chat!")
-        broadcast(f"{nickname} ha entrado al chat!\n".encode(FORMAT))
-        client.send("Connected to the server.".encode(FORMAT))
+            elif respuesta == "RC4":
+                pass
 
-        thread = threading.Thread(target=handle_client, args=(client,))
-        thread.start()
+            print(chr(27)+'[1;32m',end="")
+            print(f"[+] {nickname} ha entrado al chat!")
+            broadcast(f"{nickname} ha entrado al chat!\n".encode(FORMAT))
+            client.send("Connected to the server.".encode(FORMAT))
 
-privateKey, publicKey = generarParLlaves()
-privateKey = encriptarLlavePriv(privateKey, clave_rc4)
-#print(privateKey)
-LlaveSim = generarLlaveSimetrica()
-print("llave simetrica")
-print(LlaveSim)
-LlaveSim = encriptarLlaveSim(LlaveSim, publicKey)
-print("Nueva Llave simetrica")
-print(LlaveSim)
-
+            thread = threading.Thread(target=handle_client, args=(client,))
+            thread.start()
+        else:
+            continue
 def main():
-    
-      
-    server = serverThread()
-    server.start()
+    global serverThread
+    serverThread = serverThread()
+    serverThread.start()
     receive()
 
 if __name__ == "__main__":
+    clave_rc4 = input("[+]Escriba la clave RC4 de la sesion: ")
     main()

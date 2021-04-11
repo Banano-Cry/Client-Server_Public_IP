@@ -11,17 +11,17 @@
 
 ##FUNCIONES##
 <Clientes>
-(M)leerLlaveRC4() <-- Leer y enviar
-(M)colorChat() <-- Poner colores a las entradas del chat
+-listo-(M)leerLlaveRC4() <-- Leer y enviar
+-listo-(M)colorChat() <-- Poner colores a las entradas del chat
 -listo-(G)DesencriptarLlavePriv() <-- Desencripta la llave privada con la clave RC4
 -listo-(G)DesencriptarLlaveSim() <-- Desencripta la llave simetrica con la privada que le envio el servidor
-(M)leerMsg() <-- Separa el mensaje de texto con el hash  y se llama a calcHash() para verificar que sea el autentico
-(M)calcHash() <-- Calcula el hash del msg
+-listo-(M)leerMsg() <-- Separa el mensaje de texto con el hash  y se llama a calcHash() para verificar que sea el autentico
+-listo-(M)calcHash() <-- Calcula el hash del msg
 -(G)encriptarMsg() <-- Une el mensaje con el hash y lo encripta
 -(G)enviarMsg() <-- Envia el mensaje
 
 <Servidor>
-(M)compararRC4() <-- Compara las dos llaves, if cl1==cl2: ok else: otorga hasta 3 veces la oportunidad, si no coinciden, cambia ip ngrok
+-listo-(M)compararRC4() <-- Compara las dos llaves, if cl1==cl2: ok else: otorga hasta 3 veces la oportunidad, si no coinciden, cambia ip ngrok
 *(M)subirServidor() <-- Ejecutar ngrok desde python, copiara la ip directamente y la colocara como ip de servidor
 -listo-(G)generarParLlaves() <-- El servidor genera las llaves...
 -listo-(G)encriptarLlavePriv() <-- El servidor encripta la llave privada con RC4
