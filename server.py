@@ -210,8 +210,6 @@ def negotiationRC4(client):
     try:
         while attempt < 2:
             rc4 = client.recv(1024).decode(FORMAT)
-            print(calcHashSHA3(clave_rc4))
-            print(rc4)
             if rc4 == calcHashSHA3(clave_rc4):
                 client.send("200".encode(FORMAT))
                 return True
