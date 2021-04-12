@@ -8,12 +8,12 @@ import cryptography
 from cryptography.fernet import Fernet
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
-from Crypto.Hash import MD5
+from Crypto.Hash import MD5, SHA512
 
 try:
-    PORT = 5050
+    PORT = 17046
     FORMAT = 'utf-8'
-    SERVER = "127.0.0.1"
+    SERVER = "3.142.167.54"
     ADDR = (SERVER,PORT)
     LlavePrivada = None
     LlaveSim = None
@@ -24,20 +24,21 @@ try:
 except ValueError as e:
     print(e)
     input()
+
+def calcHashSHA3(msg):
+    msgHashed = SHA512.new()
+    msgHashed.update(msg.encode())
+    return msgHashed.hexdigest()
 def commands(command):
-
-
     if(command[1:] == "help"):
         print(chr(27)+'[1;33m',end="")
         print("\n\t[*]Lista de comandos[*]")
         print("\t[1]/exit --> Salir del servidor")
 
-    if(command[1:] == "exit"):
+    elif(command[1:] == "exit"):
         print("Cerrando conexion...")
-        #time.sleep(3)
         client.close()
         os._exit(0)
-        #sys.exit(0)
 def write():
     while True:
         msg = input("> ")
@@ -52,7 +53,7 @@ def write():
             commands(msg)
 
         else:
-            msg = msg + calcHash(msg)
+            msg = msg + calcHashMD5(msg)
             msg = encriptarMsg(msg,LlaveSim) #jejejeje
             data = f"$ {nickname}: {msg}"
             client.send(data.encode(FORMAT))
@@ -67,6 +68,8 @@ def disclaimer():
     print(chr(27) + '[1;37m'+'\t\tLos mensajes que reciba de otro cliente se pondran en morado:')
     print(chr(27) + '[1;35m'+'\t\tEjemplo')
     print(chr(27) + '[1;37m',end="\n")
+    print(chr(27)+'[1;33m'+"\t\t\t\t[INFO] para ver los comandos escribir '/help' [INFO]")
+    print(chr(27)+'[0;37m',end="")
 def receive():
     global LlavePrivada
     global LlaveSim
@@ -178,7 +181,7 @@ def desencriptarLlaveSimetrica(LlaveSimetricaEnc, LlavePrivada):
         return LlaveSimetricaDes
     except ValueError as e:
         print("Error Tecnico: " + str(e))
-def calcHash(msg): 
+def calcHashMD5(msg): 
     msgHashed = MD5.new()
     msgHashed.update(msg.encode())
     return msgHashed.hexdigest()
@@ -192,10 +195,10 @@ def encriptarMsg(msg, LlaveSimetrica): #solo prueba
     #print("Mensaje encriptado: " + str(encrypted))
     return encrypted
 
-def checkHash(msg):
+def checkHashMD5(msg):
     hash = msg[-32:]
     msg = msg[:-32]
-    if hash == calcHash(msg):
+    if hash == calcHashMD5(msg):
         return (False, msg)
     else:
         return (True, msg)
@@ -225,7 +228,7 @@ def desencriptarMsg(msg, LlaveSimetrica): #solo prueba
     try:
         fernet = Fernet(LlaveSimetrica)
         decrypted = fernet.decrypt(str.encode(msg4[1])).decode()
-        verify, msg = checkHash(decrypted)
+        verify, msg = checkHashMD5(decrypted)
         if verify:
             print(chr(27)+'[1;31m',end="")
             print("[-] INTEGRIDAD COMPROMETIDA, EL MENSAJE NO CORRESPONDE CON EL HASH")
@@ -240,7 +243,7 @@ def sendRC4():
     global clave_rc4
     while True:
         clave_rc4 = input("Ingrese la clave RC4 acordada entre los clientes: ")
-        client.send(clave_rc4.encode(FORMAT))
+        client.send(calcHashSHA3(clave_rc4).encode(FORMAT))
         codeNumber = int(client.recv(50).decode(FORMAT))
         if codeNumber == 200:
             return True

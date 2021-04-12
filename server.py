@@ -2,11 +2,12 @@ import socket
 import threading
 import os
 import numpy as np
-
+import time
 import cryptography
 from cryptography.fernet import Fernet
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Hash import SHA512
 #######################################################
 #                   INITIALIZATION
 #######################################################
@@ -27,8 +28,11 @@ server.listen()
 
 client_list = []
 nicknames = []
-rc4_keys = {}
 
+def calcHashSHA3(msg):
+    msgHashed = SHA512.new()
+    msgHashed.update(msg.encode())
+    return msgHashed.hexdigest()
 def KSA(llave):
     longitud_llave = len(llave)
     S = list(range(256))
@@ -118,6 +122,8 @@ class serverThread(threading.Thread):
         else:
             os.system('clear')
         print("[STARTING] Server listening ...")
+        print(chr(27)+'[1;33m'+"\t\t\t\t[INFO] para ver los comandos escribir 'help' [INFO]")
+        print(chr(27)+'[0;37m',end="")
         while(self.status):
             if self.status:
                 consoleCommand = str(input(chr(27)+'[1;37m'+'\n[Server]$ '))
@@ -129,6 +135,7 @@ class serverThread(threading.Thread):
                     print("\t[1]exit --> Salir del servidor")
                     print("\t[2]count --> Cantidad de usuarios en el servidor")
                     print("\t[3]list --> Lista a los usuarios en el servidor")
+                    print("\t[4]key --> Muestra la clave RC4 temporal")
 
                 elif consoleCommand == "list":
                     print(chr(27)+'[1;33m',end="")
@@ -139,6 +146,10 @@ class serverThread(threading.Thread):
                     print("[*] Los usuarios conectados actualmente son: [*]")
                     for num, name in enumerate(nicknames):
                         print(f"[{num + 1}] {name}")
+
+                elif consoleCommand == "key":
+                    print(chr(27)+'[1;33m',end="")
+                    print(f"[*] La clave RC4 actual es '{clave_rc4}' [*]")
 
                 elif consoleCommand == "exit":
                     print(chr(27)+'[1;31m',end="")
@@ -199,7 +210,9 @@ def negotiationRC4(client):
     try:
         while attempt < 2:
             rc4 = client.recv(1024).decode(FORMAT)
-            if rc4 == clave_rc4:
+            print(calcHashSHA3(clave_rc4))
+            print(rc4)
+            if rc4 == calcHashSHA3(clave_rc4):
                 client.send("200".encode(FORMAT))
                 return True
             else:
@@ -217,6 +230,7 @@ def receive():
     while True:
         client, addr = server.accept()
         if negotiationRC4(client):   
+            time.sleep(1)
             print(f'Connected with {addr}')
 
             client.send("Nickname?: ".encode(FORMAT))
