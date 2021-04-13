@@ -242,7 +242,8 @@ def desencriptarMsg(msg, LlaveSimetrica): #solo prueba
 def sendRC4():
     global clave_rc4
     while True:
-        clave_rc4 = input("Ingrese la clave RC4 acordada entre los clientes: ")
+        print(chr(27)+'[0;37m',end="")
+        clave_rc4 = input("Ingrese la clave acordada entre los clientes: ")
         client.send(calcHashSHA3(clave_rc4).encode(FORMAT))
         codeNumber = int(client.recv(50).decode(FORMAT))
         if codeNumber == 200:

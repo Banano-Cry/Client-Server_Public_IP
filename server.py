@@ -1,5 +1,6 @@
 import socket
 import threading
+import datetime
 import os
 import numpy as np
 import time
@@ -205,19 +206,24 @@ def createKeys():
     #print("Nueva Llave simetrica")
     #print(LlaveSim)
 
-def negotiationRC4(client):
+def negotiationRC4(client, addr):
     attempt = 0
     try:
-        while attempt < 2:
+        while True:
             rc4 = client.recv(1024).decode(FORMAT)
-            if rc4 == calcHashSHA3(clave_rc4):
+            if attempt == 2:
+                client.send("500".encode(FORMAT))
+                client.close()
+                print(chr(27)+'[1;31m',end="")
+                print(f"[LOG:{datetime.datetime.now()}] Un usuario ha fallado muchas veces la clave RC4 [LOG]")
+                print(chr(27)+'[0;37m',end="")
+                return False
+            elif rc4 == calcHashSHA3(clave_rc4):
                 client.send("200".encode(FORMAT))
                 return True
             else:
                 client.send("400".encode(FORMAT))
                 attempt+=1
-        client.send("500".encode(FORMAT))
-        client.close()
         return False
     except Exception as e:
         print(e)
@@ -227,7 +233,7 @@ def receive():
     createKeys()
     while True:
         client, addr = server.accept()
-        if negotiationRC4(client):   
+        if negotiationRC4(client, addr):   
             time.sleep(1)
             print(f'Connected with {addr}')
 
